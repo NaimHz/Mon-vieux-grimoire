@@ -2,8 +2,12 @@ const express = require('express');
 
 const app = express();
 const mongoose = require('mongoose');
+require('dotenv').config();
 
-mongoose.connect('mongodb+srv://sekki69:sekki69@cluster0.kl9gvuh.mongodb.net/?retryWrites=true&w=majority',
+const userRoutes = require('./routes/user');
+const stuffRoutes = require('./routes/stuff');
+
+mongoose.connect(process.env.MONGODB_URL,
   { useNewUrlParser: true,
     useUnifiedTopology: true })
   .then(() => console.log('Connexion à MongoDB réussie !'))
@@ -16,5 +20,8 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     next();
 });
+
+app.use('/api/auth', userRoutes);
+app.use('/api/books', stuffRoutes);
 
 module.exports = app;
