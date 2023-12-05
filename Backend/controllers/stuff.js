@@ -11,7 +11,6 @@ exports.createBook = (req, res, next) => {
       ratings: [{ userId: req.auth.userId, grade: bookObject.ratings[0].grade }],
       imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
-  //console.log(book);
   book.save()
   .then(() => { res.status(201).json({message: 'Objet enregistré !'})})
   .catch(error => { res.status(400).json( { error })})
@@ -33,26 +32,42 @@ exports.getOneBook = (req, res, next) => {
   );
 };
 
-exports.modifyBook = (req, res, next) => {
-  const bookObject = req.file ? {
-      ...JSON.parse(req.body.book),
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-  } : { ...req.body };
-
-  delete bookObject._userId;
-  Book.findOne({_id: req.params.id})
-      .then((book) => {
-          if (book.userId != req.auth.userId) {
-              res.status(401).json({ message : 'Not authorized'});
-          } else {
-              Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-              .then(() => res.status(200).json({message : 'Objet modifié!'}))
-              .catch(error => res.status(401).json({ error }));
-          }
-      })
-      .catch((error) => {
-          res.status(400).json({ error });
-      });
+exports.addNote = (req, res, next) => {
+    Book.findOne({
+        _id: req.params.id
+      }).then(
+        (book) => {
+            for (const rating of book.ratings) {
+                if (rating.userId === req.auth.userId) {
+                console.log(req.body)
+                  return res.status(400).json({
+                    error: "L'utilisateur a déjà une note pour ce livre"
+                  });
+                }
+            }
+            let newAverageRating = req.body.rating;
+            let count = 0;
+            book.ratings.forEach((rating) => {
+                newAverageRating += rating.grade;
+                count++;
+              });
+            newAverageRating = Math.floor(newAverageRating / (count+1));
+            let newRatings = book.ratings;
+            newRatings.push({userId : req.auth.userId, grade: req.body.rating});
+            book.ratings = newRatings;
+            book.averageRating = newAverageRating;
+            Book.updateOne({ _id: req.params.id}, {ratings : newRatings, averageRating : newAverageRating})
+                .then(() => res.status(200).json(book))
+                .catch(error => res.status(401).json({ error }));
+        }
+      ).catch(
+        (error) => {
+          res.status(404).json({
+            error: error
+          });
+        }
+      );
+  
 };
 
 exports.deleteBook = (req, res, next) => {
@@ -86,4 +101,20 @@ exports.getAllStuff = (req, res, next) => {
       });
     }
   );
+};
+
+exports.getBestRating = (req, res, next) => {
+    Book.find().sort({
+        averageRating: -1
+      }).limit(3).then(
+        (books) => {
+          res.status(200).json(books);
+        }
+      ).catch(
+        (error) => {
+          res.status(400).json({
+            error: error
+          });
+        }
+      );
 };
