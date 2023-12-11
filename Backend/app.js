@@ -4,6 +4,7 @@ const app = express();
 const mongoose = require('mongoose');
 require('dotenv').config();
 const path = require('path');
+const helmet = require('helmet');
 
 const userRoutes = require('./routes/user');
 const bookRoutes = require('./routes/book');
@@ -13,6 +14,13 @@ mongoose.connect(process.env.MONGODB_URL,
     useUnifiedTopology: true })
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch((err) => console.log('Connexion à MongoDB échouée !'+err));
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
+  
 
 app.use(express.json());
 app.use((req, res, next) => {

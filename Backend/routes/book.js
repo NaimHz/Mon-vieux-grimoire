@@ -17,5 +17,4 @@ router.put('/:id', auth, multer, bookCtrl.modifyBook);
 
 router.delete('/:id', auth, bookCtrl.deleteBook);
 
-
 module.exports = router;
